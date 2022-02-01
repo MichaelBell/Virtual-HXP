@@ -72,5 +72,19 @@ int main() {
 
     setup_slave();
 
-		while (1) __wfi();
+		while (1) 
+    {
+      for (int i = 0; i < 10; ++i)
+      {
+        uint16_t on;
+        uint16_t off;
+        on = context.mem[6+4*i] + (((uint16_t)context.mem[6+4*i+1]) << 8);
+        off = context.mem[6+4*i+2] + (((uint16_t)context.mem[6+4*i+3]) << 8);
+        printf("Servo %d: %hu %hu\n", i, on, off);
+      }
+      puts("\x1b[H");
+      sleep_ms(1);
+    }
+
+    return 0;
 }
