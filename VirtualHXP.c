@@ -18,6 +18,14 @@ static const uint I2C_SLAVE_SCL_PIN = PICO_DEFAULT_I2C_SCL_PIN; // 5
 static const uint I2C_SLAVE2_SDA_PIN = 6;
 static const uint I2C_SLAVE2_SCL_PIN = 7;
 
+static float sCenteredAngle[18] = { 1.602f, 1.453f, 1.681f, 1.429f, 1.343f, 1.728f, 1.319f, 1.367f, 1.728f, 1.210f, 1.319f, 1.581f, 1.257f, 1.312f, 1.602f, 1.335f, 1.367f, 1.539f};
+
+#define PI 3.1415926535897932384626433832795f
+#define HALF_PI 1.5707963267948966192313216916398f
+#define TWO_PI      6.283185307179586476925286766559f
+#define DEG_TO_RAD  0.017453292519943295769236907684886f
+#define RAD_TO_DEG  57.295779513082320876798154814105f
+
 // The slave implements a 256 byte memory. To write a series of bytes, the master first
 // writes the memory address, followed by the data. The address is automatically incremented
 // for each byte transferred, looping back to 0 upon reaching the end. Reading is done
@@ -100,23 +108,33 @@ int main() {
 
     char buf[80];
 
+    const float fSERVO_FREQ = 50;
+    const float pulseDuration = 1000.0f / (fSERVO_FREQ * 4096);
+
 		while (1) 
     {
-      for (int i = 0; i < 10; ++i)
+      for (int i = 0; i < 9; ++i)
       {
-        uint16_t on;
-        uint16_t off;
-        on = context[0].mem[6+4*i] + (((uint16_t)context[0].mem[6+4*i+1]) << 8);
-        off = context[0].mem[6+4*i+2] + (((uint16_t)context[0].mem[6+4*i+3]) << 8);
-        sprintf(buf, "Servo %d: %04hu %04hu\t", i, on, off);
+        uint16_t on = context[0].mem[6+4*i] + (((uint16_t)context[0].mem[6+4*i+1]) << 8);
+        uint16_t off = context[0].mem[6+4*i+2] + (((uint16_t)context[0].mem[6+4*i+3]) << 8);
+        float pulseInMilliseconds = off * pulseDuration;
+        float angle = (pulseInMilliseconds - 2.5f) * HALF_PI + sCenteredAngle[i];
+        angle *= RAD_TO_DEG;
+        sprintf(buf, "Servo %d: %04hu %04hu %4.0f\n", i, on, off, angle);
         puts(buf);
         terminal_puts(0, i, buf);
+      }
 
-        on = context[1].mem[6+4*i] + (((uint16_t)context[1].mem[6+4*i+1]) << 8);
-        off = context[1].mem[6+4*i+2] + (((uint16_t)context[1].mem[6+4*i+3]) << 8);
-        sprintf(buf, "Servo %d: %04hu %04hu\n", i, on, off);
+      for (int i = 1; i < 10; ++i)
+      {
+        uint16_t on = context[1].mem[6+4*i] + (((uint16_t)context[1].mem[6+4*i+1]) << 8);
+        uint16_t off = context[1].mem[6+4*i+2] + (((uint16_t)context[1].mem[6+4*i+3]) << 8);
+        float pulseInMilliseconds = off * pulseDuration;
+        float angle = (pulseInMilliseconds - 2.5f) * HALF_PI + sCenteredAngle[18-i];
+        angle *= RAD_TO_DEG;
+        sprintf(buf, "Servo %02d: %04hu %04hu %4.0f\n", 18-i, on, off, angle);
         puts(buf);
-        terminal_puts(32, i, buf);
+        terminal_puts(32, 9-i, buf);
       }
       puts("\x1b[H");
       sleep_ms(1);
