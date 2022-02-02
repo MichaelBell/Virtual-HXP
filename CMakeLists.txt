@@ -17,12 +17,18 @@ project(VirtualHXP C CXX ASM)
 pico_sdk_init()
 
 add_subdirectory(i2c_slave)
+add_subdirectory(PicoDVI/software/libdvi)
+include_directories(PicoDVI/software/include PicoDVI/software/assets)
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(VirtualHXP VirtualHXP.c)
+add_executable(VirtualHXP VirtualHXP.c terminal.c tmds_encode_font_2bpp.S)
 
-set_source_files_properties(image.c PROPERTIES COMPILE_FLAGS "-masm-syntax-unified")
+target_compile_definitions(VirtualHXP PRIVATE 
+  DVI_VERTICAL_REPEAT=1
+  DVI_DEFAULT_SERIAL_CONFIG=pico_sock_cfg
+  PICO_CORE1_STACK_SIZE=0x200
+  )
 
 pico_set_program_name(VirtualHXP "VirtualHXP")
 pico_set_program_version(VirtualHXP "0.1")
@@ -36,6 +42,7 @@ target_link_libraries(VirtualHXP pico_stdlib pico_multicore)
 # Add any user requested libraries
 target_link_libraries(VirtualHXP
 		i2c_slave
+    libdvi
         )
 
 pico_add_extra_outputs(VirtualHXP)
