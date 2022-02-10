@@ -4,6 +4,7 @@
 #include <pico/multicore.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "terminal.h"
 
 static const uint I2C_SLAVE_ADDRESS = 0x40;
@@ -91,6 +92,31 @@ static void setup_slave() {
     i2c_slave_init(i2c1, I2C_SLAVE2_ADDRESS, &i2c_slave_handler);
 }
 
+typedef struct
+{
+  float x;
+  float y;
+  float z;
+} leg_t;
+static leg_t legs[6];
+static float servo_angle[18];
+
+void compute_leg_positions()
+{
+  const float L[3] = { 137.29f, 93.1f, 45.1f };
+
+  for (int i = 0; i < 6; ++i)
+  {
+    float* angle = &servo_angle[i*3];
+    leg_t* leg = &legs[i];
+    float alpha = PI - angle[1] - angle[0];
+    leg->z = cosf(angle[1]) * L[1] - cosf(alpha) * L[0];
+    float u = sinf(angle[1]) * L[1] + sinf(alpha) * L[0] + L[2];
+    leg->x = sinf(angle[2]) * u;
+    leg->y = cosf(angle[2]) * u;
+  }
+}
+
 int main() {
     // Call this first as it changes the system clock
     terminal_start();
@@ -118,11 +144,12 @@ int main() {
         uint16_t on = context[0].mem[6+4*i] + (((uint16_t)context[0].mem[6+4*i+1]) << 8);
         uint16_t off = context[0].mem[6+4*i+2] + (((uint16_t)context[0].mem[6+4*i+3]) << 8);
         float pulseInMilliseconds = off * pulseDuration;
-        float angle = (pulseInMilliseconds - 2.5f) * HALF_PI + sCenteredAngle[i];
+        float angle = (pulseInMilliseconds - 1.5f) * HALF_PI + sCenteredAngle[i];
+        servo_angle[i] = angle;
         angle *= RAD_TO_DEG;
-        sprintf(buf, "Servo %d: %04hu %04hu %4.0f\n", i, on, off, angle);
+        sprintf(buf, "Servo %d: %04hu %04hu %4.0f", i, on, off, angle);
         puts(buf);
-        terminal_puts(0, i, buf);
+        //terminal_puts(0, i, buf);
       }
 
       for (int i = 1; i < 10; ++i)
@@ -130,11 +157,19 @@ int main() {
         uint16_t on = context[1].mem[6+4*i] + (((uint16_t)context[1].mem[6+4*i+1]) << 8);
         uint16_t off = context[1].mem[6+4*i+2] + (((uint16_t)context[1].mem[6+4*i+3]) << 8);
         float pulseInMilliseconds = off * pulseDuration;
-        float angle = (pulseInMilliseconds - 2.5f) * HALF_PI + sCenteredAngle[18-i];
+        float angle = (pulseInMilliseconds - 1.5f) * HALF_PI + sCenteredAngle[18-i];
+        servo_angle[18-i] = angle;
         angle *= RAD_TO_DEG;
-        sprintf(buf, "Servo %02d: %04hu %04hu %4.0f\n", 18-i, on, off, angle);
+        sprintf(buf, "Servo %02d: %04hu %04hu %4.0f", 18-i, on, off, angle);
         puts(buf);
-        terminal_puts(32, 9-i, buf);
+        //terminal_puts(32, 9-i, buf);
+      }
+
+      compute_leg_positions();
+      for (int i = 0; i < 6; ++i)
+      {
+        sprintf(buf, "Leg %d: (%5.1f, %5.1f, %5.1f)", i, legs[i].x, legs[i].y, legs[i].z);
+        puts(buf);
       }
       puts("\x1b[H");
       sleep_ms(1);
