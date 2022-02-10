@@ -18,11 +18,11 @@ pico_sdk_init()
 
 add_subdirectory(i2c_slave)
 add_subdirectory(PicoDVI/software/libdvi)
-include_directories(PicoDVI/software/include PicoDVI/software/assets)
+include_directories(PicoDVI/software/include PicoDVI/software/assets RDM)
 
 # Add executable. Default name is the project name, version 0.1
 
-add_executable(VirtualHXP VirtualHXP.c terminal.c tmds_encode_font_2bpp.S)
+add_executable(VirtualHXP VirtualHXP.cpp VHXPData.cpp VHXPServoInput.c terminal.c tmds_encode_font_2bpp.S)
 
 target_compile_definitions(VirtualHXP PRIVATE 
   DVI_VERTICAL_REPEAT=1

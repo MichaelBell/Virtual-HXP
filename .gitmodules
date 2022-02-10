@@ -2,3 +2,6 @@
 	path = PicoDVI
 	url = https://github.com/Wren6991/PicoDVI.git
 	branch = master
+[submodule "RDM"]
+	path = RDM
+	url = git@github.com:Lowingbn/RDM.git
